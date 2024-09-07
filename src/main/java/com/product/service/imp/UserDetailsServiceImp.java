@@ -12,7 +12,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.product.DAO.UserDAO;
-import com.product.model.Role;
 import com.product.model.User;
 
 @Service
@@ -31,20 +30,7 @@ public class UserDetailsServiceImp implements UserDetailsService {
         }
 
         User user = userOpt.get();
-        System.err.println(user.getUsername() + "  " + user.getAccountRole().getName());
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                mapRolesToAuthorities(List.of(user.getAccountRole()))
-
-        );
-    }
-
-    private List<GrantedAuthority> mapRolesToAuthorities(List<Role> roles) {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
-
-                .collect(Collectors.toList());
+        return new UserDetailsImp(user); // Sử dụng UserDetailsImp
     }
 
 }

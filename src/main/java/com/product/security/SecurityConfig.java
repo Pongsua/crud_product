@@ -10,17 +10,18 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
+    private final JwtFilter jwtFilter;
 
-    public SecurityConfig(UserDetailsService userDetailsService) {
+    public SecurityConfig(UserDetailsService userDetailsService, JwtFilter jwtFilter) {
         this.userDetailsService = userDetailsService;
+        this.jwtFilter = jwtFilter;
     }
 
     @Bean
@@ -28,18 +29,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/product/create", "/product/update/**", "/product/delete/**")
-                        .hasRole("ADMIN") // ADMIN có quyền thực hiện các thao tác CRUD
-                        .requestMatchers("/product/**")
-                        .hasAnyRole("USER", "ADMIN") // USER chỉ được xem
+                        .requestMatchers("/auth/login").permitAll() // Đảm bảo endpoint login được phép truy cập không
+                                                                    // cần xác thực
+                        .requestMatchers("/product/create", "/product/update/**", "/product/delete/**").hasRole("ADMIN")
+                        .requestMatchers("/product/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .permitAll())
-                .httpBasic(httpBasic -> httpBasic
-                        .authenticationEntryPoint((request, response, authException) -> response
-                                .sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")));
-
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // Thêm JWT filter
         return http.build();
     }
 
